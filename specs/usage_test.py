@@ -56,4 +56,20 @@ describe "Chain Usage":
                 )
             
             shapes.shapes |should| have(2).shapes
+    
+    describe "Storing and retrieving values":
+        it "is possible to store values and retrieve them all from the chain":
+            shapes = Shapes()
+            values = (
+                Chain(shapes)
+                    .create('square')
+                .chain_store("square_thing")
+                .chain_promote_value()
+                    .set_length(5)
+                    .area()
+                .chain_store("square_area")
+                .chain_get_stored()
+                )
+            
+            values |should| equal_to({'square_thing':shapes.shapes[0], 'square_area' : 25})
         

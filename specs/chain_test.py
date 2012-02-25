@@ -1,23 +1,23 @@
 # coding: spec
 
-from chain import Decorate, ChainInternals, Chain
+from chain import ChainAPI, ChainInternals, Chain
 
 from fudge import patched_context
 import fudge
 
-describe "Decorate":
+describe "ChainAPI":
     it "sets bypass_chain on the function if bypass is True":
         def test(): pass
         test |should_not| respond_to("bypass_chain")
         
-        Decorate(bypass=True)(test) |should| be(test)
+        ChainAPI(bypass=True)(test) |should| be(test)
         test.bypass_chain |should| be(True)
     
     it "sets not_allowed_from_chain to True if allowed is False":
         def test(): pass
         test |should_not| respond_to("not_allowed_from_chain")
         
-        Decorate(allowed=False)(test) |should| be(test)
+        ChainAPI(allowed=False)(test) |should| be(test)
         test.not_allowed_from_chain |should| be(True)
     
     it "can set both bypass_chain and not_allowed_from_chain if specified":
@@ -25,7 +25,7 @@ describe "Decorate":
         test |should_not| respond_to("bypass_chain")
         test |should_not| respond_to("not_allowed_from_chain")
         
-        Decorate(bypass=True, allowed=False)(test) |should| be(test)
+        ChainAPI(bypass=True, allowed=False)(test) |should| be(test)
         test.bypass_chain |should| be(True)
         test.not_allowed_from_chain |should| be(True)
     
@@ -34,9 +34,16 @@ describe "Decorate":
         test |should_not| respond_to("bypass_chain")
         test |should_not| respond_to("not_allowed_from_chain")
         
-        Decorate()(test) |should| be(test)
+        ChainAPI()(test) |should| be(test)
         test |should_not| respond_to("bypass_chain")
         test |should_not| respond_to("not_allowed_from_chain")
+    
+    it "sets keep_current on func by default":
+        def test(): pass
+        test |should_not| respond_to("keep_current")
+        
+        ChainAPI()(test) |should| be(test)
+        test.keep_current |should| be(True)
 
 describe "ChainInternals":
     before_each:
@@ -60,7 +67,7 @@ describe "ChainInternals":
             AttributeError |should| be_thrown_by(lambda: self.internals.use('chain_doesnt_exist'))
         
         it "complains if attr on internals has not_allowed_from_chain set to True":
-            @Decorate(allowed=False)
+            @ChainAPI(allowed=False)
             def not_allowed_test():pass
             
             def allowed_test(): pass
@@ -126,28 +133,31 @@ describe "ChainInternals":
             self.internals.call_current(pos1, pos2, kw1=kw1, kw2=kw2)
         
         @fudge.test
-        it "sets self.current to the return of the call":
-            ret = fudge.Fake('ret')
-            self.internals.current = fudge.Fake("current").expects_call().returns(ret)
-            
-            self.internals.call_current()
-            self.internals.current |should| be(ret)
-        
-        @fudge.test
         it "returns the result as a single tuple if bypass_chain is true on self.current":
             ret = fudge.Fake('ret')
-            self.internals.current = Decorate(bypass=True)(fudge.Fake("current").expects_call().returns(ret))
-            
+            self.internals.current = ChainAPI(bypass=True)(fudge.Fake("current").expects_call().returns(ret))
             self.internals.call_current() |should| equal_to((ret, ))
-            self.internals.current |should| be(ret)
         
         @fudge.test
         it "returns nothing if bypass_chain is false on self.current":
             ret = fudge.Fake('ret')
-            self.internals.current = Decorate(bypass=False)(fudge.Fake("current").expects_call().returns(ret))
+            self.internals.current = ChainAPI(bypass=False)(fudge.Fake("current").expects_call().returns(ret))
             
             self.internals.call_current() |should| be(None)
-            self.internals.current |should| be(ret)
+        
+        @fudge.test
+        it "does not change the value of self.current if keep_current is set to True on self.current":
+            ret = fudge.Fake('ret')
+            current = ChainAPI(bypass=False)(fudge.Fake("current").expects_call().returns(ret))
+            self.internals.current = current
+            self.internals.call_current() |should| be(None)
+            self.internals.current |should| be(current)
+            
+            ret = fudge.Fake('ret')
+            current = ChainAPI(bypass=True)(fudge.Fake("current").expects_call().returns(ret))
+            self.internals.current = current
+            self.internals.call_current() |should| equal_to((ret, ))
+            self.internals.current |should| be(current)
     
     describe "API":
         def should_bypass(self, func):
