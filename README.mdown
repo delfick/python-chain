@@ -86,7 +86,7 @@ options are as follows
 
  * strict_proxy : Default is True : Will make the chain complain if you attempt to access an attribute on the proxy that doesn't exist
 
-Chain().\<attrigute\>
+Chain().\<attribute\>
 -------------------
 
 When you access something on a chain, the chain will record what you have just accessed and return the chain again.
