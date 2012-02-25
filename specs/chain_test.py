@@ -147,7 +147,153 @@ describe "ChainInternals":
             self.internals.current = Decorate(bypass=False)(fudge.Fake("current").expects_call().returns(ret))
             
             self.internals.call_current() |should| be(None)
-            self.internals.current |should| be(ret)              
+            self.internals.current |should| be(ret)
+    
+    describe "API":
+        def should_bypass(self, func):
+            func |should| respond_to("bypass_chain")
+            func.bypass_chain |should| be(True)
+        
+        def should_not_bypass(self, func):
+            func |should_not| respond_to("bypass_chain")
+        
+        before_each:
+            self.proxy = fudge.Fake("proxy")
+            self.current = fudge.Fake("current")
+            self.internals = ChainInternals(self.proxy)
+            self.internals.current = self.current
+            
+        describe "exit":
+            it "bypasses the chain and returns the proxy":
+                self.should_bypass(self.internals.exit)
+                self.internals.exit() |should| be(self.proxy)
+        
+        describe "get_stored":
+            it "bypasses the chain and returns all stored values":
+                self.should_bypass(self.internals.get_stored)
+                stored_values = fudge.Fake("stored_values")
+                self.internals.stored_values = stored_values
+                self.internals.get_stored() |should| be(stored_values)
+        
+        describe "store":
+            it "stores current value with particular name":
+                self.should_not_bypass(self.internals.store)
+                self.internals.stored_values |should| equal_to({})
+                self.internals.store("a")
+                self.internals.stored_values['a'] |should| be(self.current)
+                
+                self.internals.current = 3
+                self.internals.store('b')
+                self.internals.stored_values['b'] |should| be(3)
+        
+        describe "retrieve":
+            it "bypasses the chain and returns specific stored value":
+                self.should_bypass(self.internals.retrieve)
+                stored = fudge.Fake("stored")
+                self.internals.current = stored
+                KeyError |should| be_thrown_by(lambda: self.internals.retrieve("value"))
+                self.internals.store("value")
+                self.internals.retrieve('value') |should| be(stored)
+        
+        describe "tap":
+            @fudge.test
+            it "calls provided action with current value":
+                self.should_not_bypass(self.internals.tap)
+                action = (fudge.Fake("action").expects_call()
+                    .with_args(self.current)
+                    )
+                
+                self.internals.tap(action)
+        
+        describe "call_proxy":
+            it "sets current value as the proxy":
+                self.should_not_bypass(self.internals.call_proxy)
+                self.internals.proxy |should| be(self.proxy)
+                self.internals.call_proxy()
+                self.internals.current |should| be(self.proxy)
+        
+        describe "setattr":
+            it "can call setattr on proxy object":
+                self.should_not_bypass(self.internals.setattr)
+                class Obj(object):
+                    def __init__(self):
+                        self.a = 5
+                
+                value = fudge.Fake("value")
+                proxy = Obj()
+                proxy.a |should| be(5)
+                self.internals.proxy = proxy
+                self.internals.setattr('a', value)
+                proxy.a |should| be(value)
+        
+        describe "Proxy Management":
+            it "can name the current proxy":
+                self.should_not_bypass(self.internals.name_proxy)
+                self.internals.named_proxies |should| equal_to({})
+                self.internals.name_proxy("blah")
+                self.internals.named_proxies['blah'] |should| be(self.proxy)
+        
+            it "can restore to a named proxy":
+                self.should_not_bypass(self.internals.restore_proxy)
+                proxy2 = fudge.Fake("proxy2")
+                self.internals.name_proxy("blah")
+                self.internals.proxy |should| be(self.proxy)
+                
+                self.internals.proxy = proxy2
+                self.internals.restore_proxy("blah")
+                self.internals.proxy |should| be(self.proxy)
+                
+            it "can replace proxy with a specific object":
+                self.should_not_bypass(self.internals.replace_proxy)
+                proxy2 = fudge.Fake("proxy2")
+                self.internals.proxy |should| be(self.proxy)
+                self.internals.replace_proxy(proxy2)
+                self.internals.proxy |should| be(proxy2)
+            
+            it "can change proxy to current value":
+                self.should_not_bypass(self.internals.promote_value)
+                self.internals.proxy |should| be(self.proxy)
+                self.internals.current |should| be(self.current)
+                self.internals.promote_value()
+                self.internals.proxy |should| be(self.current)
+        
+            it "can go back to previous proxy":
+                self.should_not_bypass(self.internals.demote_value)
+                self.internals.proxy |should| be(self.proxy)
+                self.internals.current |should| be(self.current)
+                self.internals.promote_value()
+                self.internals.proxy |should| be(self.current)
+                
+                self.internals.demote_value()
+                self.internals.proxy |should| be(self.proxy)
+                
+                self.internals.demote_value()
+                self.internals.proxy |should| be(None)
+                
+                self.internals.demote_value()
+                self.internals.proxy |should| be(None)
+        
+            it "can go back to previous proxy after restoring named proxy":
+                proxy2 = fudge.Fake("proxy2")
+                self.internals.name_proxy("blah")
+                self.internals.proxy |should| be(self.proxy)
+                
+                self.internals.proxy = proxy2
+                self.internals.restore_proxy("blah")
+                self.internals.proxy |should| be(self.proxy)
+                
+                self.internals.demote_value()
+                self.internals.proxy |should| be(proxy2)
+        
+            it "can go back to previous proxy after replacing with specific object":
+                proxy2 = fudge.Fake("proxy2")
+                self.internals.proxy |should| be(self.proxy)
+                
+                self.internals.replace_proxy(proxy2)
+                self.internals.proxy |should| be(proxy2)
+                
+                self.internals.demote_value()
+                self.internals.proxy |should| be(self.proxy)
 
 describe "Chain":
     @fudge.patch("chain.ChainInternals.__init__")

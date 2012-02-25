@@ -3,9 +3,6 @@ class Decorate(object):
     def __init__(self, bypass=False, allowed=True):
         self.bypass = bypass
         self.allowed = allowed
-        self.proxy_stack = []
-        self.stored_values = {}
-        self.named_proxies = {}
     
     def __call__(self, func):
         if self.bypass:
@@ -18,13 +15,17 @@ class Decorate(object):
 
 class ChainInternals(object):
     """Internal management for state of the chain"""
-    def __init__(self, strict_proxy=True, **options):
-        self.proxy = options.get('proxy', None)
+    def __init__(self, proxy=None, strict_proxy=True, **options):
+        self.proxy = proxy
+        if not proxy:
+            self.proxy = options.get('proxy', None)
         self.options = options
         self.options['strict_proxy'] = strict_proxy
         
         self.current = None
+        self.proxy_stack = []
         self.stored_values = {}
+        self.named_proxies = {}
     
     @Decorate(allowed=False)
     def use(self, key):
@@ -94,10 +95,6 @@ class ChainInternals(object):
         """Set current value to proxy so calling the chain calls the proxy"""
         self.current = self.proxy
     
-    def replace_proxy(self, new_proxy):
-        """Replace current proxy with new_proxy"""
-        self.proxy = new_proxy
-    
     def name_proxy(self, name):
         """Give the current proxy a name"""
         self.named_proxies[name] = self.proxy
@@ -105,6 +102,10 @@ class ChainInternals(object):
     def restore_proxy(self, name):
         """Set the proxy to the proxy that was given the provided name"""
         self.promote_value(self.named_proxies[name])
+    
+    def replace_proxy(self, new_proxy):
+        """Replace current proxy with new_proxy"""
+        self.promote_value(new_proxy)
     
     def setattr(self, key, value):
         """Call setattr on the proxy with provided key and value"""
