@@ -13,14 +13,15 @@ example
 =======
 
     from chain import Chain
-    values = (Chain(myobj)
-        .do_task1()
-        .do_task2()
-    .chain_store("task2_value")
-        .do_task3()
-        .do_task4()
-    .chain_store("task4_value")
-        .do_task5()
+    values = (
+        Chain(myobj)
+            .do_task1()
+            .do_task2()
+        .chain_store("task2_value")
+            .do_task3()
+            .do_task4()
+        .chain_store("task4_value")
+            .do_task5()
         )
     
     # values will be {"task2_value" : <value from do_task2>, "task4_value" : <value from do_task4>}
@@ -32,16 +33,17 @@ example
     #   values['task4_value'] = myobj.do_task4()
     #   myobj.to_task5()
     
-    thingValue = (Chain(myobj)
-        .something()
-        .do_task3()
-    .chain_promote_value()
-        .stuff()
-        .do_aThing()
-    .chain_store("thing")
-    .chain_demote_value()
-        .do_task4
-    .chain_retreive("thing")
+    thingValue = (
+        Chain(myobj)
+            .something()
+            .do_task3()
+        .chain_promote_value()
+            .stuff()
+            .do_aThing()
+        .chain_store("thing")
+        .chain_demote_value()
+            .do_task4
+        .chain_retreive("thing")
         )
     
     # Equivalent to
