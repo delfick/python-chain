@@ -3,6 +3,12 @@ python-chain
 
 Class for making any object have a chainable API.
 
+Why?
+====
+
+Because chained APIs are good.
+And returning self from every function is bad.
+
 example
 =======
 
@@ -113,6 +119,22 @@ attempt(attr, reraise=[])
 Will attempt to access and call the provided attribute on the proxied object. If an exception is raised that is an instance of any of the classes provided in 'reraise', then that exception is propogated.
 
 If an exception is raised that is not in 'reraise', then the chain will silently ignore it and proxy nothing.
+
+
+setattr(key, value)
+-------------------
+
+Will call setattr(obj, key, value) where obj is the proxied object, before returning the chain
+
+call_proxy()
+------------
+
+Will make it so the next time you call the Chain, the proxy itself is called
+
+tap(action)
+-----------
+
+Will call action with the last value on the chain, before returning the chain
 
 license
 =======
