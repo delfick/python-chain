@@ -94,8 +94,6 @@ When you access something on a chain, the chain will record what you have just a
 If the attribute you accessed starts with 'chain_' then the value being accessed will be from the chain.
 Any other value will be access from the object the chain is currently proxying.
 
-Some special chain properties will return as the property itself rather than the chain.
-
 Chain().\_\_call\_\_
 ----------------
 
