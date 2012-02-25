@@ -11,8 +11,25 @@ And returning self from every function is bad.
 
 example
 =======
-
+    
+    # Import chain
     from chain import Chain
+    
+    # Simple case
+    (Chain(square)
+        .set_left_corner(3)
+        .set_right_corner(4)
+        .make_3d(length=4)
+        .some_other_awesome_square_function()
+        )
+    
+    # Equivalent to
+    #   square.set_left_corner(3)
+    #   square.set_right_corner(4)
+    #   square.make_3d(length=4)
+    #   square.some_other_awesome_square_function()
+    
+    # Storing values
     values = (
         Chain(myobj)
             .do_task1()
@@ -22,6 +39,7 @@ example
             .do_task4()
         .chain_store("task4_value")
             .do_task5()
+        .chain_get_stored()
         )
     
     # values will be {"task2_value" : <value from do_task2>, "task4_value" : <value from do_task4>}
@@ -33,6 +51,7 @@ example
     #   values['task4_value'] = myobj.do_task4()
     #   myobj.to_task5()
     
+    # Promoting and demoting results as the proxy
     thingValue = (
         Chain(myobj)
             .something()
@@ -98,6 +117,11 @@ retrieve(name)
 --------------
 
 Will return the value stored under the name instead of the chain.
+
+get_stored()
+-------------
+
+Returns dictionary of all named stored values
 
 promote_value()
 ---------------
