@@ -22,10 +22,41 @@ class ChainInternals(object):
         self.options = options
         self.options['strict_proxy'] = strict_proxy
         
-        self.current = None
+        self._current = None
+        self._last_current = None
+        
         self.proxy_stack = []
         self.stored_values = {}
         self.named_proxies = {}
+    
+    @property
+    def current(self):
+        """Used by call_current to call the last accessed thing"""
+        return self._current
+    
+    @property
+    def current_value(self):
+        """
+            Used by API to access the current value
+            Different to current only if a chain method is access via self.use
+        """
+        return self._last_current
+    
+    @current.setter
+    def current(self, value):
+        """
+            To ensure API still has access to self.current after self.use is used,
+            The current value is always stored on both self._current and self._last_current
+            And self.use will manually set self._last_current to the current value,
+            after setting self._current to the function to be called next when choosing an internals attribute
+        """
+        self._current = value
+        self._last_current = value
+    
+    @current_value.setter
+    def current_value(self, value):
+        """set self._last_current to something different to self._current"""
+        self._last_current = value
     
     @Decorate(allowed=False)
     def use(self, key):
@@ -34,15 +65,18 @@ class ChainInternals(object):
             if hasattr(attr, 'not_allowed_from_chain') and attr.not_allowed_from_chain:
                 raise AttributeError("Not allowed to use %s" % key)
             
+            value = self.current
+            # self.current is needed for call_current
+            # self.current_value is used by self.current when it's called
             self.current = attr
+            self.current_value = value
         else:
-            if hasattr(self.proxy, key):
+            try:
                 self.current = getattr(self.proxy, key)
-            else:
+            except AttributeError:
+                self.current = None
                 if self.options.get('strict_proxy', False):
-                    raise AttributeError("Proxy does not have %s" % key)
-                else:
-                    self.current = None
+                    raise AttributeError("Proxy (%s) does not have %s" % (self.proxy, key))
     
     @Decorate(allowed=False)
     def call_current(self, *args, **kwargs):
@@ -72,17 +106,17 @@ class ChainInternals(object):
     
     def tap(self, action):
         """Call the provided action with the current value and don't change current value"""
-        return action(self.current)
+        return action(self.current_value)
 
     def store(self, name):
         """Store current value under a particular name"""
-        self.stored_values[name] = self.current
+        self.stored_values[name] = self.current_value
     
     def promote_value(self, value=None):
         """Use current value as proxy"""
         self.proxy_stack.append(self.proxy)
         if value is None:
-            value = self.current
+            value = self.current_value
         self.proxy = value
     
     def demote_value(self):

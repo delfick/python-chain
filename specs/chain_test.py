@@ -160,8 +160,10 @@ describe "ChainInternals":
         before_each:
             self.proxy = fudge.Fake("proxy")
             self.current = fudge.Fake("current")
+            self.current_value = fudge.Fake("current_value")
             self.internals = ChainInternals(self.proxy)
             self.internals.current = self.current
+            self.internals.current_value = self.current_value
             
         describe "exit":
             it "bypasses the chain and returns the proxy":
@@ -180,7 +182,7 @@ describe "ChainInternals":
                 self.should_not_bypass(self.internals.store)
                 self.internals.stored_values |should| equal_to({})
                 self.internals.store("a")
-                self.internals.stored_values['a'] |should| be(self.current)
+                self.internals.stored_values['a'] |should| be(self.current_value)
                 
                 self.internals.current = 3
                 self.internals.store('b')
@@ -200,7 +202,7 @@ describe "ChainInternals":
             it "calls provided action with current value":
                 self.should_not_bypass(self.internals.tap)
                 action = (fudge.Fake("action").expects_call()
-                    .with_args(self.current)
+                    .with_args(self.current_value)
                     )
                 
                 self.internals.tap(action)
@@ -255,14 +257,14 @@ describe "ChainInternals":
                 self.internals.proxy |should| be(self.proxy)
                 self.internals.current |should| be(self.current)
                 self.internals.promote_value()
-                self.internals.proxy |should| be(self.current)
+                self.internals.proxy |should| be(self.current_value)
         
             it "can go back to previous proxy":
                 self.should_not_bypass(self.internals.demote_value)
                 self.internals.proxy |should| be(self.proxy)
                 self.internals.current |should| be(self.current)
                 self.internals.promote_value()
-                self.internals.proxy |should| be(self.current)
+                self.internals.proxy |should| be(self.current_value)
                 
                 self.internals.demote_value()
                 self.internals.proxy |should| be(self.proxy)
