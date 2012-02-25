@@ -1,0 +1,120 @@
+python-chain
+============
+
+Class for making any object have a chainable API.
+
+example
+=======
+
+    from chain import Chain
+    values = (Chain(myobj)
+        .do_task1()
+        .do_task2()
+    .chain_store("task2_value")
+        .do_task3()
+        .do_task4()
+    .chain_store("task4_value")
+        .do_task5()
+        )
+    
+    # values will be {"task2_value" : <value from do_task2>, "task4_value" : <value from do_task4>}
+    # Equivalent to 
+    #   values = {}
+    #   myobj.do_task1()
+    #   values['task2_value'] = myobj.do_task2()
+    #   myobj.do_task3()
+    #   values['task4_value'] = myobj.do_task4()
+    #   myobj.to_task5()
+    
+    thingValue = (Chain(myobj)
+        .something()
+        .do_task3()
+    .chain_promote_value()
+        .stuff()
+        .do_aThing()
+    .chain_store("thing")
+    .chain_demote_value()
+        .do_task4
+    .chain_retreive("thing")
+        )
+    
+    # Equivalent to
+    #   myobj.something()
+    #   task3Value = myobj.do_task3()
+    #   task3Value.stuff()
+    #   stored_thingValue = task3Value.do_aThing()
+    #   myobj.do_task4()
+    #   thingValue = stored_thingValue
+
+Chain Class
+===========
+
+Chain(obj, **options)
+---------------------
+
+Creates a Chain object where "obj" is the object being proxied.
+Options control how the chain works.
+
+Chain().*
+---------
+
+When you access something on a chain, the chain will record what you have just accessed and return the chain again.
+
+If the attribute you accessed starts with 'chain_' then the value being accessed will be from the chain.
+Any other value will be access from the object the chain is currently proxying.
+
+Some special chain properties will return as the property itself rather than the chain.
+
+Chain().__call__
+----------------
+
+Calling the chain will call the last value that was accessed and store it's value.
+Everything except some special chain commands will make sure the chain itself is returned.
+
+Chain Internals
+===============
+
+Methods on the chain itself can be access by accessing 'chain_<attr>' on the Chain object where <attr> is the attribute on the internals that you want to access.
+
+store(name)
+-----------
+
+Will store the last value accessed (whether it be via attribute access or calling the chain) under a name for later retrieval.
+returns the chain.
+
+retreive(name)
+--------------
+
+Will return the value stored under the name instead of the chain.
+
+promote_value()
+---------------
+
+Will make the last value the object being proxied by the chain
+
+demote_value()
+--------------
+
+Will remove the current proxied object and replace it with the one before it.
+
+name_proxy(name)
+-----------------
+
+Will give the current proxied object a name for later retrieval
+
+restore_proxy(name)
+-------------------
+
+Restores the proxy that was given the provided name
+
+attempt(attr, reraise=[])
+-------------------------
+
+Will attempt to access and call the provided attribute on the proxied object. If an exception is raised that is an instance of any of the classes provided in 'reraise', then that exception is propogated.
+
+If an exception is raised that is not in 'reraise', then the chain will silently ignore it and proxy nothing.
+
+license
+=======
+
+WTFPL
