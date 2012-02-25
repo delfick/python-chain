@@ -164,6 +164,11 @@ tap(action)
 Will call action with the last value on the chain, before returning the chain.
 This won't change the current value on the chain.
 
+exit()
+------
+
+Returns the object being proxied.
+
 license
 =======
 

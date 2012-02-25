@@ -55,6 +55,11 @@ class ChainInternals(object):
                 return (self.current, )
     
     @Decorate(bypass=True)
+    def exit(self):
+        """Bypass chain and return all stored values"""
+        return self.proxy
+    
+    @Decorate(bypass=True)
     def get_stored(self):
         """Bypass chain and return all stored values"""
         return self.stored_values
