@@ -3,6 +3,9 @@ class Decorate(object):
     def __init__(self, bypass=False, allowed=True):
         self.bypass = bypass
         self.allowed = allowed
+        self.proxy_stack = []
+        self.stored_values = {}
+        self.named_proxies = {}
     
     def __call__(self, func):
         if self.bypass:
@@ -51,8 +54,56 @@ class ChainInternals(object):
                 # And ones that don't
                 return (self.current, )
     
+    @Decorate(bypass=True)
+    def get_stored(self):
+        """Bypass chain and return all stored values"""
+        return self.stored_values
+    
+    @Decorate(bypass=True)
+    def retrieve(self, name):
+        """Bypass chain and return current value"""
+        return self.stored_values[name]
+    
+    def tap(self, action):
+        """Call the provided action with the current value and don't change current value"""
+        return action(self.current)
+
+    def store(self, name):
+        """Store current value under a particular name"""
+        self.stored_values[name] = self.current
+    
+    def promote_value(self, value=None):
+        """Use current value as proxy"""
+        self.proxy_stack.append(self.proxy)
+        if value is None:
+            value = self.current
+        self.proxy = value
+    
+    def demote_value(self):
+        """Remove current proxy and use previous proxy instead"""
+        self.proxy = None
+        if self.proxy_stack:
+            self.proxy = self.proxy_stack.pop()
+    
+    def call_proxy(self):
+        """Set current value to proxy so calling the chain calls the proxy"""
+        self.current = self.proxy
+    
     def replace_proxy(self, new_proxy):
+        """Replace current proxy with new_proxy"""
         self.proxy = new_proxy
+    
+    def name_proxy(self, name):
+        """Give the current proxy a name"""
+        self.named_proxies[name] = self.proxy
+    
+    def restore_proxy(self, name):
+        """Set the proxy to the proxy that was given the provided name"""
+        self.promote_value(self.named_proxies[name])
+    
+    def setattr(self, key, value):
+        """Call setattr on the proxy with provided key and value"""
+        setattr(self.proxy, key, value)
 
 class Chain(object):
     """Exposed API for creating a chain to proxy some object"""

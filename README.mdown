@@ -60,9 +60,9 @@ example
             .stuff()
             .do_aThing()
         .chain_store("thing")
-        .chain_demote_value()
+        .chain_previous_proxy()
             .do_task4
-        .chain_retreive("thing")
+        .chain_retrieve("thing")
         )
     
     # Equivalent to
@@ -124,10 +124,10 @@ Returns dictionary of all named stored values
 promote_value()
 ---------------
 
-Will make the last value the object being proxied by the chain
+Will make the last value on the object become proxied by the chain
 
-demote_value()
---------------
+previous_proxy()
+----------------
 
 Will remove the current proxied object and replace it with the one before it.
 
@@ -145,15 +145,8 @@ Will give the current proxied object a name for later retrieval
 restore_proxy(name)
 -------------------
 
-Restores the proxy that was given the provided name
-
-attempt(attr, reraise=[])
--------------------------
-
-Will attempt to access and call the provided attribute on the proxied object. If an exception is raised that is an instance of any of the classes provided in 'reraise', then that exception is propogated.
-
-If an exception is raised that is not in 'reraise', then the chain will silently ignore it and proxy nothing.
-
+Restores the proxy that was given the provided name.
+Will keep a record of current proxy, so that previous_proxy still works.
 
 setattr(key, value)
 -------------------
@@ -168,7 +161,8 @@ Will make it so the next time you call the Chain, the proxy itself is called
 tap(action)
 -----------
 
-Will call action with the last value on the chain, before returning the chain
+Will call action with the last value on the chain, before returning the chain.
+This won't change the current value on the chain.
 
 license
 =======
